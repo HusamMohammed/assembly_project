@@ -155,10 +155,12 @@ checkk:
         
         EasyPrint:
         xlat
+        nnn:
         mov [edi], al
         add edi, 2
         add ecx, 2
-        inc dl                 
+        inc dl  
+                                                                                                                              
         mov ah,2
         mov bh,0
         int 10h
@@ -230,6 +232,10 @@ checkk:
         call CaseOfFindindingHash
         call ShiftingTextToWriteCharacter
         
+        cmp dword[pair],1
+        je CapsAll
+        CapsNew:
+        mov ebx,ScanCode2
         xlat 
         mov [edi],al
         add edi,2
@@ -246,9 +252,24 @@ checkk:
         
         next2:
         jmp Caps
+        
+        CapsAll:
+        call _clearscreen
+        call _whitebackgound
+        
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
+        mov ah,2
+        mov bh,0
+        int 10h
+        mov dword[pair],0
+        jmp CapsNew
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	BackSpace:
-        cmp edi,0xB8000
+        cmp dword[pair],1
+        je BackSpaceAll
+       cmp edi,0xB8000
         je return
         
         
@@ -288,9 +309,8 @@ checkk:
 ;        ;;;;;;;;;;;;;;;;
         
         
-        mov al, 00h
-        mov [edx+1], al
-        mov byte[edx+1],11110000b ;00000111b
+        
+        mov byte[edx+1],11110000b 
        
         mov esi, HASHL1       
         jmp MDel
@@ -317,8 +337,10 @@ checkk:
         cmp ecx, 160
         je BKLD
         
-        mov al, [edi+2]
-        mov [edi], al
+        ;mov al, [edi+2]
+;        mov [edi], al
+        mov al,[edi]
+        mov [edi-2],al
         
         add edi, 2
         add ecx, 2
@@ -335,18 +357,21 @@ checkk:
         mov bh,0
         int 10h
         jmp return
+           
         
         
         BKcase2:
+       
+        pushad
+        call _check_previousRow ;checks whether the previous is empty or not
+        cmp eax,0
+        jz BackSpace_previousRowEmpty
+        popad
         
-        mov ecx, 160
+            
+        mov ecx, 160 ;;;
         dec dh
         mov dl, 79
-        push edi
-        
-        
-        pop edi
-        
         push ebp
         push edi
         xor ebp, ebp
@@ -364,7 +389,7 @@ checkk:
         pop edi
         
         sub ecx, 2
-        dec dl
+        ;dec dl
         sub edi, 2
         BKL3:
         mov al, 0x20
@@ -381,7 +406,8 @@ checkk:
         BKL2:
         cmp ebp, 0
         je BKLD2
-        
+        ;cmp  byte [edi],0x20 ;;;
+;        jne BKLD3
         mov al, [edi+2]
         mov [edi], al
         mov al, 0x20
@@ -398,6 +424,7 @@ checkk:
         pop edi
         pop ebp
         
+        
         sub edi, 2
         sub ecx, 2
         dec dl
@@ -405,46 +432,60 @@ checkk:
         jmp BKL3
         
         BKLD3:
-        
-        push ebp         
-        push edi
-        
-        
-        
-        BKL4:
-        cmp ebp, 0
-        je BKLD4
-        
-        mov al, [edi+2]
-        mov [edi], al
-        mov al, 0x20
-        mov [edi+2], al
-        add edi, 2
-        sub ebp, 2
-        jmp BKL4
-        
-        BKLD4:
+        add edi,2
+        add ecx,2
+        inc dl
         
         
-        pop edi
-        pop ebp
         
-        sub edi, 2
-        sub ecx, 2
-        dec dl
-        
-         mov ah,2
+            
+        mov ah,2
         mov bh,0
         int 10h
         
         pop ebp
-        jmp return
         
-     
         return:
         jmp esi
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        
+        BackSpace_previousRowEmpty:
+      
+        popad
+        
+       
+        sub edi,160 ;empty row
+        pushad
+        call _BackSpace_rows
+        popad
+        
+        
+        dec dh
+        
+        mov ah,2
+        mov bh,0
+        int 10h
+             
+   
+        jmp return
+        returnl:
+        jmp esi
+        
+        BackSpaceAll:
+        call _clearscreen
+        call _whitebackgound
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
+        mov ah,2
+        mov bh,0
+        int 10h
+        mov dword[pair],0
+        jmp check
+        
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Delete:
+        cmp dword[pair],1
+        je BackSpaceAll
         cmp ecx,160
         je DelRet
    
@@ -578,43 +619,43 @@ checkk:
         
         
          
-        push eax
-        push edi
-        push ecx
-        push ebp
-        push esi
-        
-        xor ebp, ebp
-        SH2L1:
-        mov al, 0x20
-        cmp [edi], al
-        je SH2LD1
-        
-        add ebp, 2
-        
-        add edi, 2
-        jmp SH2L1
-        
-        SH2LD1:
-        xor esi, esi
-        mov esi, edi
-        sub esi, 2
-        SH2L2:
-        cmp ebp, 0
-        je SH2LD2
-        mov al, [esi]
-        mov [edi], al
-        sub edi, 2
-        sub esi, 2
-        sub ebp, 2
-        jmp SH2L2
-        
-        SH2LD2:
-        pop esi
-        pop ebp
-        pop ecx
-        pop edi
-        pop eax
+        ;push eax
+;        push edi
+;        push ecx
+;        push ebp
+;        push esi
+;        
+;        xor ebp, ebp
+;        SH2L1:
+;        mov al, 0x20
+;        cmp [edi], al
+;        je SH2LD1
+;        
+;        add ebp, 2
+;        
+;        add edi, 2
+;        jmp SH2L1
+;        
+;        SH2LD1:
+;        xor esi, esi
+;        mov esi, edi
+;        sub esi, 2
+;        SH2L2:
+;        cmp ebp, 0
+;        je SH2LD2
+;        mov al, [esi]
+;        mov [edi], al
+;        sub edi, 2
+;        sub esi, 2
+;        sub ebp, 2
+;        jmp SH2L2
+;        
+;        SH2LD2:
+;        pop esi
+;        pop ebp
+;        pop ecx
+;        pop edi
+;        pop eax
         
         call CaseOfFindindingHash
         call ShiftingTextToWriteCharacter
@@ -637,6 +678,8 @@ checkk:
         jmp Shift2
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         new_line:
+        cmp dword[pair],1
+        je new_line_All
         push ecx
         push ecx
         push eax
@@ -724,12 +767,29 @@ checkk:
         int 10h
         
         jmp esi
+        
+        new_line_All:
+        call _clearscreen
+        call _whitebackgound
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
+        mov ah,2
+        mov bh,0
+        int 10h
+        mov dword[pair],0
+        jmp check
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         left:
         
         pushAD
         call _whitebackgound
         popAD
+        xor ebp, ebp
+        
+        cmp dword[pair],1
+        je leftAll
+        leftNew:
         
         dec edi           
         dec edi              
@@ -757,12 +817,20 @@ checkk:
         
         L1:
         jmp esi
+        leftAll:
+        mov dword[pair],0
+        mov esi,check
+        jmp leftNew
+        
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         right:
         
         pushAD
         call _whitebackgound
         popAD
+        xor ebp, ebp
+        cmp dword[pair],1
+        je rightAll
         
         cmp dl,79
         je case
@@ -787,12 +855,24 @@ checkk:
         
         OutOfLoop:
         jmp esi
+        
+        rightAll:
+        mov dword[pair],0
+        mov ah,2
+        mov bh,0
+        int 10h
+        jmp check
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Up:
         
         pushAD
         call _whitebackgound
         popAD
+        
+        xor ebp, ebp
+        cmp dword[pair],1
+        je UpAll
+        UpNew:
         
         cmp dh,0
         je c1
@@ -805,11 +885,20 @@ checkk:
         
         c1:
         jmp esi
+        UpAll:
+        mov dword[pair],0
+        mov esi,check
+        jmp UpNew
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Down:
         pushAD
         call _whitebackgound
         popAD
+        
+        xor ebp, ebp
+        cmp dword[pair],1
+        je DownAll
+        DownNew:
         
         cmp dh,24
         je c2
@@ -822,41 +911,52 @@ checkk:
       
         c2:
         jmp esi
+        DownAll:
+        mov dword[pair],0
+        mov esi,check
+        jmp DownNew
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         leftS:
         cmp ebp,0
-        jne K
+        jne LTed
         mov [index],edi
-        K:       
+        
+        LTed:
         inc ebp
-        mov [HashCount], ebp
-        inc edi
-        mov al,1Fh; 70h          ;;
-        mov [edi], al        ;;
+        
         dec edi
-        dec edi           ;;
         mov al, 1Fh;70h          ;;
-        mov [edi], al        ;;
+        cmp [edi], al        ;;
+        jne LT2
+        mov byte [edi],11110000b;00000111b
         dec edi
-             
+        jmp LT3
+        
+        LT2:
+        mov [edi], al
+        dec edi
+        
+        LT3:
         cmp dl,0
-        je case3
+        je Lcase4
         dec dl
         sub ecx, 2
         mov ah,2
         mov bh,0
         int 10h
         jmp esi
-        case3:
-        cmp dh,0
-        je L2
-        dec dh
+        Lcase4:
+        cmp dh, 0
+        je LOutOfLoop2
+        mov ecx, 185
         mov dl,79
+        dec dh
         mov ah,2
         mov bh,0
         int 10h
-        L2:
+        LOutOfLoop2:
         jmp esi
+     
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         rightS:
         cmp ebp,0
@@ -865,7 +965,7 @@ checkk:
         
         Ted:
         inc ebp
-        mov [HashCount], ebp
+        
         mov al, 1Fh;70h          ;;
         cmp [edi+1], al        ;;
         jne T2
@@ -903,24 +1003,36 @@ checkk:
         cmp dh,0
         je UOut
         push ecx
+        push esi
         xor ecx, ecx
         
         ULoo:
         cmp ecx, 80
         je UD
+        
+        
         inc ebp
-        inc edi
-        mov al,1Fh; 70h          ;;
-        mov [edi], al        ;;
+        
         dec edi
-        dec edi           ;;
-        mov al,1Fh; 70h          ;;
-        mov [edi], al        ;;
-        sub edi, 1
+        mov al, 1Fh;70h          ;;
+        cmp [edi], al        ;;
+        jne ULT2
+        mov byte [edi],11110000b;00000111b
+        dec edi
+        jmp ULT3
+        
+        ULT2:
+        mov [edi], al
+        dec edi
+        
+        ULT3:
+        
+        
         inc ecx
         jmp ULoo
         
         UD:
+        pop esi
         pop ecx
         dec dh
         mov ah,2
@@ -936,23 +1048,32 @@ checkk:
         je DOut
         push ecx
         xor ecx, ecx
+        
         DLoo:
         cmp ecx, 80
         je DDD
-        DEC ebp
         
-        DEC edi
-        mov al,1Fh; 70h          ;;
-        mov [edi], al        ;;
-        INC edi
         
-        INC edi           ;;
+        inc ebp
+        
         mov al, 1Fh;70h          ;;
-        mov [edi], al        ;;
-        add edi, 1
+        cmp [edi+1], al        ;;
+        jne DT2
+        mov al, 00h
+        mov [edi+1], al
+        mov byte [edi+1],11110000b;00000111b
+        add edi,2
+        jmp DT3
+        
+        DT2:
+        mov [edi+1], al
+        add edi,2
+        
+        DT3:
         
         inc ecx
         jmp DLoo
+        
         DDD:
         pop ecx
         INC dh
@@ -980,16 +1101,120 @@ checkk:
         je Copy
         cmp al,0x2D
         je Cut
-        
+        cmp al,0x1E
+        je controlA
         jmp Ctrl
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        controlA:
+        mov esi,0xB8000
+        mov dword[bibo],esi
+        newCA:
+        cmp esi,0xB8FA0
+        je endCA
+        mov al, 0x20
+        cmp [esi], al
+        je We
+        mov dword[bibo+4],esi
+        mov al,1Fh
+        mov [esi+1],al
+        We:
+        add esi,2
+        jmp newCA
+        endCA:
+        push ecx
+        push eax
+        mov ecx,[bibo+4]
+        mov eax,[bibo]
+        sub ecx,eax
+        mov dword[c],ecx
+        pop ecx
+        pop eax
+        mov dword[pair],1
+        jmp controlAA
+        
+        controlAA:
+        in al,0x64
+        and al,0x1
+        jz controlAA
+        
+        in al,0x60
+        
+        cmp al,81
+        ja controlAA
+        
+        cmp al,0x1D
+        je Ctrl
+        
+        cmp al, 0x0E
+        je BackSpace
+        
+        cmp al, 0x4B
+        je left
+        
+        cmp al, 0x4D
+        je right
+        
+        cmp al, 0x48;up
+        je Up
+        
+        cmp al, 0x50;down
+        je Down
+        
+        ;cmp al,0x53
+;        je BackSpace
+        
+        cmp al, 0xE0
+        je M1 
+        
+        cmp al,0x47
+        je Home
+        
+        cmp al,0x4F
+        je End
+        
+        cmp al,0x3A
+        je Caps
+        
+        ;cmp al,0x53; Dot
+;        je BackSpace
+;        
+;        cmp al,0x53  ;Delete    ;pressing Ctrl+A ->>> then pressinf delete
+;        je BackSpace
+        
+        cmp al,0x45
+        je Num
+        
+        
+          
+        mov ebx, ScanCode
+        xlat
+        mov [store] ,al
+        call _clearscreen
+        call _whitebackgound
+        mov edi, 0xB8000
+        mov ebx,ScanCode
+        xor ecx,ecx
+        xor edx,edx
+        mov ah,2
+        mov bh,0
+        int 10h
+        mov al,[store]
+        mov dword[pair],0
+        jmp nnn
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
          Copy:       
          pushAD
          call ClearSavingFunction
          popAD
          
+         cmp dword[pair],1
+         je CopyAll
+         
+         push ebp
          push edx
          push ecx
+         xor ebp, ebp
          xor eax, eax
          xor edx, edx
          xor ecx,ecx
@@ -1004,13 +1229,46 @@ checkk:
          mov [sav+ecx] , al
          inc ecx 
          
+         inc ebp
+         
+         
          Coo1:
          add edx, 2
          jmp Coo
          EndCoo:
+         mov [HashCount], ebp
          pop ecx
          pop edx
-         jmp Ctrl
+         pop ebp
+         
+         jmp check
+         
+         CopyAll:
+        push esi
+        push eax
+        push ebx
+        push edx
+        push ecx
+        xor ebx,ebx
+        xor eax,eax
+        xor edx,edx
+        mov esi,0xB8000
+       
+        NewCopyAll:
+        cmp esi,dword[bibo+4]
+        jg EndCopyAll
+        mov bl,[esi]
+        mov [sav+eax],bl
+        inc eax
+        add esi,2
+        jmp NewCopyAll
+        EndCopyAll:
+        pop ecx
+        pop ebx
+        pop eax
+        pop esi
+        pop edx
+        jmp check
          ;;;;;;;;;;;;;;;;;;;;;;;;;
         EndCtrl:
         in al,0x64
@@ -1038,6 +1296,10 @@ checkk:
         jmp check 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;  
         Paste:
+        cmp dword[pair],1
+        je PasteAll
+        
+        xor ebp, ebp
         mov ebp, [HashCount]
         push esi 
         xor esi,esi
@@ -1047,6 +1309,9 @@ checkk:
         jge endP
         
         mov bl,[sav+esi]
+        cmp bl, 99h
+        je endP
+        call ShiftingTextToWriteCharacter
         mov [edi],bl
         inc esi
         cmp dl,79
@@ -1067,35 +1332,133 @@ checkk:
         add ecx,2
         jmp For2
         endP:
-        mov ebp,0
         xor ebp,ebp
+        
         pop esi
+        jmp check
+        
+        
+        PasteAll:
+        call _clearscreen
+        call _whitebackgound
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
+        mov ah,2
+        mov bh,0
+        int 10h
+        mov dword[pair],0
+        
+        xor esi,esi
+        ForAlll:
+        push ebx
+        cmp edi,dword[bibo+4]
+        jg donne
+        mov bl,[sav+esi]
+        mov [edi],bl
+        inc esi
+        cmp dl,79
+        je newAll
+        inc dl
+        mov ah,2
+        mov bh,0
+        int 10h
+        jmp QAll
+        newAll:
+        mov dl,0
+        inc dh
+        mov ah,2
+        mov bh,0
+        int 10h
+        QAll:
+        add edi,2
+        add ecx,2
+        jmp ForAlll
+        donne:
+        pop ebx
         jmp check
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Cut:
         pushAD
          call ClearSavingFunction
          popAD
-        push edx
-        xor eax,eax
-        mov edx,edi
-        mov ebp, [HashCount]
-        For3:
-        cmp eax,ebp
-        jge endCt
-        mov bl,[edx]
-        mov [sav+eax],bl
-        mov byte [edx],0x20
-        mov byte [edx+1],11110000b;00000111b
-        add edx,2
-        inc eax
-        jmp For3
-        endCt:
+         
+         cmp dword[pair],1
+         je CutAll
+         
+         push ebp
+         push edx
+         push ecx
+         xor ebp, ebp
+         xor eax, eax
+         xor edx, edx
+         xor ecx,ecx
+         mov edx, 0xB8000
+         CCoo:
+         cmp edx, 0xB8FA0
+         jge CEndCoo
+         mov al,1Fh; 70h
+         cmp [edx+1], al
+         jne CCoo1
+         mov al, [edx]
+         mov [sav+ecx] , al
+         mov al,0x20
+         mov [edx],al
+;         mov byte [edx+1],11110000b;00000111b
+         inc ecx 
+         
+         inc ebp
+         
+         
+         CCoo1:
+         add edx, 2
+         jmp CCoo
+         CEndCoo:
+         mov [HashCount], ebp
+         pop ecx
+         pop edx
+         pop ebp
+         
+         
+         call CaseOfFindindingHash
+         jmp check
         
+        CutAll:
+        push esi
+        push eax
+        push ebx
+        push edx
+        push ecx
+        xor ebx,ebx
+        xor eax,eax
+        xor edx,edx
+        mov esi,0xB8000
+       
+        NewCutAll:
+        cmp esi,dword[bibo+4]
+        jg EndCutAll
+        mov bl,[esi]
+        mov [sav+eax],bl
+        inc eax
+        add esi,2
+        jmp NewCutAll
+        EndCutAll:
+         
+        pop ecx
+        pop ebx
+        pop eax
+        pop esi
         pop edx
+        
+        call _clearscreen
+        call _whitebackgound
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
         mov ah,2
         mov bh,0
         int 10h
+        mov dword[pair],0
         
         jmp check
         
@@ -1158,6 +1521,9 @@ checkk:
                        
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Home:
+               cmp dword[pair],1
+        je HomeAll
+        HomeNew:
                sub edi, ecx
                
                xor ecx, ecx
@@ -1166,8 +1532,15 @@ checkk:
                mov bh,0
                int 10h
                jmp check
+        HomeAll:
+        call _whitebackgound
+        mov dword[pair],0
+        jmp HomeNew
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         End:
+        cmp dword[pair],1
+        je EndAll
+        EndNew:
                sub edi, ecx
                
                add edi, 160
@@ -1189,8 +1562,15 @@ checkk:
                add edi, 2
                
                jmp check
+               
+         EndAll:
+        call _whitebackgound
+        mov dword[pair],0
+        jmp EndNew
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         Num:
+        cmp dword[pair],1
+        je NumAll
         mov ebx, ScanCode
         mov esi,Num
         in al,0x64
@@ -1266,6 +1646,20 @@ checkk:
         
         nx:
         jmp Num
+        
+        
+        NumAll:
+        call _clearscreen
+        call _whitebackgound
+        mov edi,0xB8000
+        xor ecx,ecx
+        xor edx,edx
+        mov al,2
+        mov bl,0
+        int 10h
+        mov ebx, ScanCode
+        mov dword[pair],0
+        jmp Num
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         BackSlash:
         mov al, 0x2F
@@ -1330,6 +1724,7 @@ checkk:
         
         cmp ecx,160
         jl n3
+        
         xor ecx,ecx
         inc dh
         xor dl,dl
@@ -1654,6 +2049,10 @@ checkk:
       jmp check
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        tab1: 
+       
+       cmp dword [first], 0
+       je t1
+       
        cmp byte [currentTab],0
        je set1   
        cmp byte [currentTab],2     
@@ -1699,11 +2098,33 @@ checkk:
        
 continue_tab1:  
        
+       pushad
        call _clearscreen
+       call _whitebackgound
+       popad
        mov bp, ttab1		    
-       call _delay
+       call _delay 
        
-       xor ecx, ecx
+       ;xor ecx, ecx
+;       mov edi, 0xB8000
+;       mov ebp, savtab1
+;       
+;       restore_tab1:
+;       mov al,[ebp]
+;       mov [edi],al
+;       add edi,2
+;       inc ebp
+;       inc ecx
+;       cmp ecx,2000
+;       jl restore_tab1
+       
+       popad
+      xor ebp, ebp
+        
+        call _clearscreen 
+      call _whitebackgound
+      
+       ;xor ecx, ecx
        mov edi, 0xB8000
        mov ebp, savtab1
        
@@ -1716,12 +2137,10 @@ continue_tab1:
        cmp ecx,2000
        jl restore_tab1
        
-       popad
-      
-        mov edi,dword [tab1edi]
+        mov edi,[tab1edi]
         mov ecx, [tab1ecx]
         mov dx,[tab1Cursor]
-        
+       xor ebp, ebp 
         mov ah,02
         mov bh,0
         int 10h       
@@ -1736,7 +2155,7 @@ continue_tab1:
       call _whitebackgound 
       popad
       
-      mov ah,02
+      mov ah,02h
       mov bh,0
       int 10h
             
@@ -1744,6 +2163,11 @@ continue_tab1:
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;     
        tab2:
+       
+       
+       cmp dword [first], 0
+       je t2
+       
        cmp byte [currentTab],0
        je set2
        cmp byte [currentTab],1     
@@ -1798,15 +2222,38 @@ continue_tab1:
        jl savtab3_loop
        
        continue_tab2:       
-       
+       pushad
        call _clearscreen
+       call _whitebackgound
+       popad
        
        mov bp, ttab2
        call _delay
        
-       xor ecx, ecx
+       ;xor ecx, ecx
+;       mov edi, 0xB8000
+;      mov ebp, savtab2
+;       
+;       restore_tab2:
+;       
+;       mov al,[ebp]
+;       mov [edi],al
+;       
+;       add edi,2
+;       inc ebp
+;       inc ecx
+;       cmp ecx,2000
+;       jl restore_tab2
+    
+        popad
+        xor ebp, ebp
+        
+        call _clearscreen 
+      call _whitebackgound
+      
+        xor ecx, ecx
        mov edi, 0xB8000
-       mov ebp, savtab2
+      mov ebp, savtab2
        
        restore_tab2:
        
@@ -1818,11 +2265,13 @@ continue_tab1:
        inc ecx
        cmp ecx,2000
        jl restore_tab2
-    
-        popad
-        mov edi,dword [tab2edi]
-        mov ecx, [tab2ecx]
+     
+      
+        mov edi,[tab2edi]
+        mov ecx,[tab2ecx]
         mov dx,[tab2Cursor]
+        xor ebp, ebp
+        
         
         mov ah,02
         mov bh,0
@@ -1846,7 +2295,9 @@ continue_tab1:
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
        tab3:
- 
+       
+
+ ;
        cmp byte [currentTab],0
        je set3
        cmp byte [currentTab],2     
@@ -1903,14 +2354,37 @@ continue_tab1:
        
        continue_tab3:
        
+       pushad
        call _clearscreen
-       
+       call _whitebackgound
+       popad
        mov bp, ttab3
        call _delay
        
+       ;xor ecx, ecx
+;       mov edi, 0xB8000
+;       mov ebp, savtab3
+;       
+;       restore_tab3:
+;       
+;       mov al,[ebp]
+;       mov [edi],al
+;       
+;       add edi,2
+;       inc ebp
+;       inc ecx
+;       cmp ecx,2000
+;       jl restore_tab3
+;    
+        popad
+        xor ebp, ebp
+        
+        call _clearscreen 
+      call _whitebackgound
+      
        xor ecx, ecx
        mov edi, 0xB8000
-       mov ebp, savtab3
+      mov ebp, savtab3
        
        restore_tab3:
        
@@ -1922,17 +2396,19 @@ continue_tab1:
        inc ecx
        cmp ecx,2000
        jl restore_tab3
-    
-        popad
-        mov edi,dword [tab3edi]
+      
+      
+        mov edi,[tab3edi]
         mov ecx, [tab3ecx]
         mov dx,[tab3Cursor]
+        xor ebp, ebp
         
         mov ah,02
         mov bh,0
         int 10h
  
     mov byte [currentTab],3
+    
     jmp check
     
                     
@@ -1942,7 +2418,10 @@ continue_tab1:
       call _clearscreen 
       call _whitebackgound 
       popad
-      
+      mov dword [first], 1
+      cmp dword [n], 1
+      je tab1
+      jmp tab2
       mov ah,02
       mov bh,0
       int 10h
@@ -1988,13 +2467,11 @@ continue_tab1:
 ;        ;;;;;;;;;;;;;;;;
         
         
-        mov al, 00h
-        mov [edx+1], al
         mov byte[edx+1], 11110000b;00000111b
        
         mov esi, HASHL       
         jmp MDel
-;        
+;       
         HASHRet:
         add edx, 2
         jmp HASHL
@@ -2016,18 +2493,24 @@ continue_tab1:
         push ebp
         push esi
         
+        sub edi, ecx
+        add edi, 158
+        
         xor ebp, ebp
+        mov ebp, 158
+        sub ebp, ecx
         WRL1:
         mov al, 0x20
         cmp [edi], al
         je WRLD1
         
-        add ebp, 2
+        sub ebp, 2
         
-        add edi, 2
+        sub edi, 2
         jmp WRL1
         
         WRLD1:
+        
         xor esi, esi
         mov esi, edi
         sub esi, 2
@@ -2061,7 +2544,7 @@ continue_tab1:
         ClearLoop:
         cmp ecx, 1000
         je ClearDone
-        mov al, 0
+        mov al, 99h
         mov [sav+ecx], al
         inc ecx
         jmp ClearLoop
@@ -2133,6 +2616,27 @@ _whitebackgound:
      call _whitebackgound
      
      ret 
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+_check_previousRow:
+   
+    sub edi,160
+    xor ecx,ecx
+    check_previousRow_loop:
+    cmp ecx,160
+    je previousRow_empty
+    cmp byte [edi],0x20
+    jne previousRow_Notempty
+    add edi,2
+    add ecx,2
+    jmp check_previousRow_loop
+    previousRow_empty:
+    xor eax,eax ;means previous row is empty
+    ret
+    previousRow_Notempty:
+    mov eax,1 ;;means previous row is not empty
+    ret
+     
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
 _hide_cursor:
@@ -2142,7 +2646,41 @@ _hide_cursor:
      mov bh,0
      int 10h 
      ret
+     
+     _BackSpace_rows:
+        
+        mov esi,edi
+        add esi,160
+        xor ecx,ecx
+        BackSpace_rloop:
+        cmp esi,0xB8FA0
+        je BackSpace_rloopD
+        
+        BackSpace_r1loop:
+        cmp ecx,160
+        je BackSpace_r1loopD
+        mov al,[esi+ecx]
+        mov [edi+ecx],al
+        mov byte [esi],0x20
+        add ecx,2
+        jmp BackSpace_r1loop
+        BackSpace_r1loopD:
+        xor ecx,ecx
+        add edi,160
+        add esi,160
+        jmp BackSpace_rloop
+        BackSpace_rloopD:
+        ret
       
+      
+      ;;;;;;;;;;;;;;;;;;;;
+      t1:
+      mov dword[n], 1
+      jmp tab3
+      
+      t2:
+      mov dword[n], 2
+      jmp tab3
       
       
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2155,16 +2693,21 @@ ttab1: db "TAB1" ,0,0,0
 ttab2: db "TAB2" ,0,0,0
 ttab3: db "TAB3" ,0,0,0
 
-
+        n: dd 0
         tab2edi: dd 0xB8000
         tab3edi: dd 0xB8000
         currentTab: db 0
         ScanCode: db "//1234567890-=//qwertyuiop[]//asdfghjkl;'#'/zxcvbnm,.//// /",0,0
-        ShiftTable: db "//!@£$%^&*()_+//QWERTYUIOP{}//ASDFGHJKL:'~|/ZXCVBNM<>?/// /",0
-        ShiftTable2: db "//!@£$%^&*()_+//qwertyuiop{}//asdfghjkl:'~|/zxcvbnm<>?/// /",0
+        ShiftTable: db "//!@Â£$%^&*()_+//QWERTYUIOP{}//ASDFGHJKL:'~|/ZXCVBNM<>?/// /",0
+        ShiftTable2: db "//!@Â£$%^&*()_+//qwertyuiop{}//asdfghjkl:'~|/zxcvbnm<>?/// /",0
         ScanCode2: db "//1234567890-=//QWERTYUIOP[]//ASDFGHJKL;'#'/ZXCVBNM,.//// /",0
         HashCount: dd 0
-        sav: times(1000) db 0
+        sav: times(1000) db 99h
+        first: dd 0
+        c: dd 0
+        bibo:dd 0,0
+        pair:dd 0
+        store:db 'o',0
         index: dd 0   
         tab1edi: dd 0xB8000
         tab1ecx: dd 0
@@ -2174,9 +2717,9 @@ ttab3: db "TAB3" ,0,0,0
         tab2Cursor: dw 0   
         tab3ecx: dd 0
         tab3Cursor: dw 0     
-        savtab1: times (2000) db 0
-        savtab2: times (2000) db 0
-        savtab3: times (2000) db 0              
+        savtab1: times (2000) db 0x20
+        savtab2: times (2000) db 0x20
+        savtab3: times (2000) db 0x20             
 times (0x400000 - 512) db 0
 
 db 	0x63, 0x6F, 0x6E, 0x65, 0x63, 0x74, 0x69, 0x78, 0x00, 0x00, 0x00, 0x02
