@@ -21,7 +21,7 @@ db 0x55, 0xAA
 	mov ss,ax
         mov sp,0xffff
         xor ecx, ecx
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Enabling all 16 colors
       mov ax,1003h
       mov bl,0h
